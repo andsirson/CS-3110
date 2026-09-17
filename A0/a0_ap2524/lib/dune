@@ -1,0 +1,4 @@
+(library
+ (name a0_strings)
+ (wrapped false)
+ (modules strings))

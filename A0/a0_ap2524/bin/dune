@@ -1,0 +1,12 @@
+(library
+ (name a0_ap2524)
+ (wrapped false)
+ (modules main)
+ (libraries a0_strings))
+
+(executable
+ (public_name a0_ap2524)
+ (name runner)
+ (modules runner)
+ (libraries a0_ap2524))
+

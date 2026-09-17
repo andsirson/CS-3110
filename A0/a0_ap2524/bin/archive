@@ -1,0 +1,202 @@
+(* ARCHIVED!!!! ---------------------------- Archived due to better coding
+   practices and several logical mistakes Figured that restarting would be
+   better *)
+
+(*Debug content: Debug on/off - print debug information Checkpoint debug mode
+  (for testing) - enables/disables content based on debug *)
+let debug = true
+
+(* C4 - normal, all features enabled *)
+type checkpointDebug =
+  | C1
+  | C2
+  | C3
+  | C4
+
+(* --------------- MAIN CODE --------------- *)
+
+(* Main type of pet *)
+type petType = {
+  name : string;
+  fullness : int;
+  happiness : int;
+  energy : int;
+}
+
+type mood =
+  | Hungry
+  | Sleepy
+  | Lonely
+  | Delighted
+  | Content
+
+let stringOfMood = function
+  | Hungry -> "Hungry Text"
+  | Sleepy -> "Sleepy Text"
+  | Lonely -> "Lonely Text"
+  | Delighted -> "Delighted Text"
+  | Content -> "Content Text"
+
+type outcome =
+  | Thriving
+  | TLC
+  | Okay
+  | Frazzled
+  | Neglected
+
+let stringOfOutcome = function
+  | Thriving -> "Thriving Text"
+  | TLC -> "TLC Text"
+  | Okay -> "Okay Text"
+  | Frazzled -> "Frazzled Text"
+  | Neglected -> "Neglected Text"
+
+(* Helper function to clamp a value between 0,100 *)
+let clamp value = min (max value 0) 100
+let getWellness p = (p.happiness + p.fullness + p.energy) / 3
+
+(* Methods Initialize in Tuples: Impact on stats in (int,int,int) -> change to
+   (fullness,happiness,energy) *)
+
+type actionType =
+  | PetAction of (int * int * int) * string
+  | RandAction of int * (int * int * int) * string
+  | StaticAction of string
+
+(* Normal Actions*)
+let feedAction = PetAction ((25, 5, -5), "Feed")
+let playAction = PetAction ((-10, 20, -15), "Play")
+let napAction = PetAction ((-10, -5, 25), "Nap")
+let specialAction = PetAction ((-15, -20, -10), "Special")
+
+(* Random Actions*)
+let nothingAction = RandAction (0, (0, 0, 0), "Nothing Happened")
+let findSnackAction = RandAction (1, (10, 0, 0), "Found a Snack")
+let zoomiesAction = RandAction (2, (0, 15, -10), "Got the Zoomies")
+let unexpectedNapAction = RandAction (3, (-5, 0, 15), "Took an Unexpected Nap")
+let mishapAction = RandAction (4, (0, -10, 0), "Had a Mishap")
+
+(* Static Actions (no change to attributes)*)
+let checkAction = StaticAction "Check on Pet"
+let skipAction = StaticAction "Skip Turn"
+
+(* Function to get a random action *)
+let getRandomAction =
+  let rand_num = Random.int 5 in
+  match rand_num with
+  | 0 -> nothingAction
+  | 1 -> findSnackAction
+  | 2 -> zoomiesAction
+  | 3 -> unexpectedNapAction
+  | 4 -> mishapAction
+  | _ -> failwith "How did we get here? bro"
+
+(* Function to return a new pet with updated stats *)
+let calcUpdatedPet pet dFullness dHappiness dEnergy =
+  let new_fullness = clamp (pet.fullness + dFullness) in
+  let new_happiness = clamp (pet.happiness + dHappiness) in
+  let new_energy = clamp (pet.energy + dEnergy) in
+  {
+    name = pet.name;
+    fullness = new_fullness;
+    happiness = new_happiness;
+    energy = new_energy;
+  }
+
+(*Function to actually apply an action to a pet*)
+let rec applyAction pet action =
+  match action with
+  | PetAction ((dFullness, dHappiness, dEnergy), text) ->
+      if debug then Printf.printf "Action: %s\n" text;
+      applyAction
+        (calcUpdatedPet pet dFullness dHappiness dEnergy)
+        getRandomAction
+  | RandAction (_, (dFullness, dHappiness, dEnergy), text) ->
+      if debug then Printf.printf "Random Action: %s\n" text;
+      calcUpdatedPet pet dFullness dHappiness dEnergy
+  | StaticAction text -> pet
+
+let getMood pet =
+  if pet.fullness <= 20 then Hungry
+  else if pet.energy <= 20 then Sleepy
+  else if pet.happiness <= 20 then Lonely
+  else if getWellness pet > 75 then Delighted
+  else Content
+
+let getOutcome pet =
+  let wellness = getWellness pet in
+  if pet.fullness = 0 || pet.happiness = 0 || pet.energy = 0 then TLC
+  else if wellness >= 75 then Thriving
+  else if wellness >= 55 then Okay
+  else if wellness >= 35 then Frazzled
+  else Neglected
+
+let printPetStats pet =
+  Printf.printf "Fullness: %d, Happiness: %d, Energy: %d\n" pet.fullness
+    pet.happiness pet.energy
+
+let printPetMood pet =
+  let mood = getMood pet in
+  Printf.printf "Pet Mood: %s\n" (stringOfMood mood)
+
+(* Should be the main loop for the pet sim; handles inputs, calcs, turns *)
+
+let checkOnPet pet =
+  printPetStats pet;
+  printPetMood pet
+
+(* ---------- MAIN LOOP AND OVERARCHING HANDLING ---------- *)
+let endDay pet =
+  print_endline "The day has ended.";
+  print_endline "Final pet status: ";
+  print_endline "------------------";
+  printPetStats pet;
+  printPetMood pet;
+  let outcome = getOutcome pet in
+  Printf.printf "Final Outcome: %s\n" (stringOfOutcome outcome);
+  print_endline "Thanks for Playing!"
+
+(** [get_lucky_number ()] prompts the user for an integer and returns it. If the
+    user enters a non-integer, the function prints a message and prompts again.
+*)
+let rec get_lucky_number () =
+  try int_of_string (read_line ())
+  with Failure _ ->
+    print_endline "Please enter a valid integer.";
+    get_lucky_number ()
+
+(** [main_loop name turn fullness happiness energy] runs the virtual-pet
+    simulation beginning on turn [turn], with the pet named [name] having the
+    given attribute values. *)
+let rec main_loop name turn fullness happiness energy =
+  if turn > 5 then endDay
+  else
+    let pet = { name; fullness; happiness; energy } in
+    Printf.printf "Turn: %d\n" turn;
+    Printf.printf
+      "Choose an action: (1) Feed, (2) Play, (3) Nap, (4) Special, (5) Check \
+       on Pet, (6) End Turn Early\n";
+    let choice = read_int () in
+    let action =
+      match choice with
+      | 1 -> feedAction
+      | 2 -> playAction
+      | 3 -> napAction
+      | 4 -> specialAction
+      | 5 -> checkAction
+      | 6 -> skipAction
+      | _ -> failwith "Invalid choice. Please select a valid action."
+    in
+    if choice = 5 then (
+      checkOnPet pet;
+      main_loop name turn fullness happiness energy)
+    else if choice = 6 then main_loop name 6 fullness happiness energy
+    else
+      let updated_pet = applyAction pet action in
+      main_loop updated_pet.name (turn + 1) updated_pet.fullness
+        updated_pet.happiness updated_pet.energy
+
+(* Entry point of the program *)
+let () =
+  let lucky_number = get_lucky_number () in
+  Random.init lucky_number
