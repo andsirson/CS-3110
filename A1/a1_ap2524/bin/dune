@@ -1,0 +1,4 @@
+(executable
+ (public_name a1_ap2524)
+ (name main)
+ (libraries a1_ap2524))
