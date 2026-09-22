@@ -1,3 +1,4 @@
 (test
  (name test_a1_ap2524)
  (libraries a1_ap2524))
+(cram (deps ../bin/main.exe (glob_files_rec ../examples/*)))
